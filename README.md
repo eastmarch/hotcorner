@@ -9,4 +9,4 @@ Control system settings using the cursor + mousewheel:
  * `CTRL+ALT+F12`: force update corner coordinates.
 
 ### Details
-This program only works on the main monitor. Any corner besides top-left needs to be calculated in relation to the screen resolution. To address tha without adding more event listeners for resolution and DPI changes. The "force update"was added.
+This program only works on the main monitor. Any corner besides top-left needs to be calculated in relation to the screen resolution. To address that without adding more event listeners for resolution and DPI changes. The "force update" hotkey was made available.
