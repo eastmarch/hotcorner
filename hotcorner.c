@@ -8,7 +8,6 @@
 #define KEYDOWN(k) ((k) & 0x80)
 
 // If mouse enters this rectangle, activate top-left hotcorner function.
-// Screen resolution is needed for any other corner besides top-left.
 static const RECT kTopLeftHotCorner = {
     .left   = -20,
 	.top    = -20,
@@ -16,7 +15,7 @@ static const RECT kTopLeftHotCorner = {
     .bottom = +20,
 };
 
-// Top-right hotcorner coordinates are set on runtime.
+// Screen resolution is needed for any other corner besides top-left.
 static RECT kTopRightHotCorner = {};
 
 // Inputs to inject when corner activated.
@@ -50,7 +49,7 @@ static const INPUT kDesktopRightInput[] = {
 
 // Update corner coordinates with the hotkey CTRL+ALT+F12.
 // Useful when resolution or DPI changes.
-// Close program with CTRL+ALT+SHIFT+F12.
+// Quit program with CTRL+ALT+SHIFT+F12.
 static const DWORD kHotKeyModUpdate = MOD_CONTROL | MOD_ALT;
 static const DWORD kHotKeyModQuit = MOD_CONTROL | MOD_ALT | MOD_SHIFT;
 static const DWORD kHotKey = VK_F12;
@@ -87,11 +86,11 @@ static LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lPara
 		} else {
 			SendInput(_countof(kVolumeDownInput), kVolumeDownInput, sizeof(INPUT));
 		}
-		//Prevents the mouse wheel event from being handled by the program uderneath (1)
+		//Prevents the mouse wheel event from being handled by the program underneath
 		return 1;
 	}
 	
-	//Switch virtual desktops with the mousewheel on top-right hotcorner
+	//Switch virtual desktops with the mousewheel on the top-right hotcorner
 	if (PtInRect(&kTopRightHotCorner, evt->pt)){
 		if (wheelDelta > 0) {
 			SendInput(_countof(kDesktopLeftInput), kDesktopLeftInput, sizeof(INPUT));
@@ -131,10 +130,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     RegisterHotKey(NULL, 2, kHotKeyModUpdate, kHotKey);
     while (GetMessage(&Msg, NULL, 0, 0)) {
         if (Msg.message == WM_HOTKEY) {
-            if (LOWORD(Msg.lParam) == kHotKeyModQuit)
-                break;
-            if (LOWORD(Msg.lParam) == kHotKeyModUpdate)
-                UpdateCorners();
+            switch (LOWORD(Msg.lParam)) {
+                case kHotKeyModQuit: break;
+                case kHotKeyModUpdate: UpdateCorners();
+            }
         }
         DispatchMessage(&Msg);
     }
