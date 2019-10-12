@@ -13,8 +13,8 @@ VS_VERSION_INFO VERSIONINFO
         BLOCK "000004b0"
         {
             VALUE "CompanyName",      "eastmarch"
-            VALUE "FileDescription",  "voluMouse"
-            VALUE "ProductName",      "voluMouse"
+            VALUE "FileDescription",  "Volumouse"
+            VALUE "ProductName",      "Volumouse"
             VALUE "Comment",          "https://github.com/eastmarch/hotcorner"
         } 
     }

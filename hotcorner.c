@@ -7,19 +7,8 @@
 
 #define KEYDOWN(k) ((k) & 0x80)
 
-// Activates a top-left hotcorner so that you can change the volume.
-// Using the mouse wheel.
-//
-// Entirely based on this project:
-//
-// Tavis Ormandy <taviso@cmpxchg8b.com> December, 2016
-//
-// https://github.com/taviso/hotcorner
-
-
 // If mouse enters this rectangle, activate top-left hotcorner function.
-// Resolution info is needed for any other corner besides top-left.
-// Last modification: 2019-03-02
+// Screen resolution is needed for any other corner besides top-left.
 static const RECT kTopLeftHotCorner = {
     .left   = -20,
 	.top    = -20,
@@ -59,11 +48,14 @@ static const INPUT kDesktopRightInput[] = {
     { INPUT_KEYBOARD, .ki = { VK_CONTROL, .dwFlags = KEYEVENTF_KEYUP }},
 };
 
-// You can exit the application using the hot key CTRL+ALT+Q by default.
-static const DWORD kHotKeyModifiers = MOD_CONTROL | MOD_ALT;
-static const DWORD kHotKey = 'Q';
+// Update corner coordinates with the hotkey CTRL+ALT+F12.
+// Useful when resolution or DPI changes.
+// Close program with CTRL+ALT+SHIFT+F12.
+static const DWORD kHotKeyModUpdate = MOD_CONTROL | MOD_ALT;
+static const DWORD kHotKeyModQuit = MOD_CONTROL | MOD_ALT | MOD_SHIFT;
+static const DWORD kHotKey = VK_F12;
 
-
+// Mouse event handler
 static LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
     MSLLHOOKSTRUCT *evt = (MSLLHOOKSTRUCT *) lParam;
     BYTE KeyState[256];
@@ -91,23 +83,19 @@ static LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lPara
     short wheelDelta = HIWORD(evt->mouseData);
 	if (PtInRect(&kTopLeftHotCorner, evt->pt)) {
 		if (wheelDelta > 0) {
-			#pragma warning(suppress : 4090)
 			SendInput(_countof(kVolumeUpInput), kVolumeUpInput, sizeof(INPUT));
 		} else {
-			#pragma warning(suppress : 4090)
 			SendInput(_countof(kVolumeDownInput), kVolumeDownInput, sizeof(INPUT));
 		}
-		//Prevents the mouse wheel event from being handled by the program uderneath
+		//Prevents the mouse wheel event from being handled by the program uderneath (1)
 		return 1;
 	}
 	
-	//Switch virtual desktops on top-right hotcorner
+	//Switch virtual desktops with the mousewheel on top-right hotcorner
 	if (PtInRect(&kTopRightHotCorner, evt->pt)){
 		if (wheelDelta > 0) {
-			#pragma warning(suppress : 4090)
 			SendInput(_countof(kDesktopLeftInput), kDesktopLeftInput, sizeof(INPUT));
 		} else {
-			#pragma warning(suppress : 4090)
 			SendInput(_countof(kDesktopRightInput), kDesktopRightInput, sizeof(INPUT));
 		}
 		return 1;
@@ -118,26 +106,35 @@ static LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lPara
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    MSG Msg;
-    HHOOK MouseHook;
-	int screenResX;
-
-	SetProcessDPIAware();
-	screenResX = GetSystemMetrics(SM_CXSCREEN);
+// Get coordinates for corners other than top-left
+void UpdateCorners(){
+    int screenResX;
+    screenResX = GetSystemMetrics(SM_CXSCREEN);
     kTopRightHotCorner.left     =   screenResX - 20;
 	kTopRightHotCorner.top      =   -20;
 	kTopRightHotCorner.right    =   screenResX + 20;
     kTopRightHotCorner.bottom   =   +20;
+}
+
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    MSG Msg;
+    HHOOK MouseHook;
+
+	SetProcessDPIAware();
+	UpdateCorners();
     
     if (!(MouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookCallback, NULL, 0))){
         return 1;
     }
 
-    RegisterHotKey(NULL, 1, kHotKeyModifiers, kHotKey);
+    RegisterHotKey(NULL, 1, kHotKeyModQuit, kHotKey);
+    RegisterHotKey(NULL, 2, kHotKeyModUpdate, kHotKey);
     while (GetMessage(&Msg, NULL, 0, 0)) {
         if (Msg.message == WM_HOTKEY) {
-            break;
+            if (LOWORD(Msg.lParam) == kHotKeyModQuit)
+                break;
+            if (LOWORD(Msg.lParam) == kHotKeyModUpdate)
+                UpdateCorners();
         }
         DispatchMessage(&Msg);
     }
