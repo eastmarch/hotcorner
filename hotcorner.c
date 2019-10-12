@@ -7,59 +7,74 @@
 
 #define KEYDOWN(k) ((k) & 0x80)
 
-// This is a **very** minimal hotcorner app, written in C. Maybe its not the
-// optimal way to do this, but it works for me.
+// Activates a top-left hotcorner so that you can change the volume.
+// Using the mouse wheel.
 //
-// Zero state is stored anywhere, no registry keys or configuration files.
-//
-// - If you want to configure something, edit the code.
-// - If you want to uninstall it, just delete it.
+// Entirely based on this project:
 //
 // Tavis Ormandy <taviso@cmpxchg8b.com> December, 2016
 //
 // https://github.com/taviso/hotcorner
-//
 
-// If the mouse enters this rectangle, activate the hot corner function.
-// There are some hints about changing corners here
-//      https://github.com/taviso/hotcorner/issues/7#issuecomment-269367351
-static const RECT kHotCorner = {
-    .top    = -20,
+
+// If mouse enters this rectangle, activate top-left hotcorner function.
+// Resolution info is needed for any other corner besides top-left.
+// Last modification: 2019-03-02
+static const RECT kTopLeftHotCorner = {
     .left   = -20,
-    .right  = +20,
+	.top    = -20,
+	.right  = +20,
     .bottom = +20,
 };
 
-// Input to inject when corner activated (Win+Tab by default).
-static const INPUT kCornerInput[] = {
-    { INPUT_KEYBOARD, .ki = { VK_LWIN, .dwFlags = 0 }},
-    { INPUT_KEYBOARD, .ki = { VK_TAB,  .dwFlags = 0 }},
-    { INPUT_KEYBOARD, .ki = { VK_TAB,  .dwFlags = KEYEVENTF_KEYUP }},
-    { INPUT_KEYBOARD, .ki = { VK_LWIN, .dwFlags = KEYEVENTF_KEYUP }},
+// Top-right hotcorner coordinates are set on runtime.
+static RECT kTopRightHotCorner = {};
+
+// Inputs to inject when corner activated.
+static const INPUT kVolumeUpInput[] = {
+    { INPUT_KEYBOARD, .ki = { VK_VOLUME_UP, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_VOLUME_UP, .dwFlags = KEYEVENTF_KEYUP }},
 };
 
-// How long cursor has to linger in the kHotCorner RECT to trigger input.
-static const DWORD kHotDelay = 150;
+static const INPUT kVolumeDownInput[] = {
+    { INPUT_KEYBOARD, .ki = { VK_VOLUME_DOWN, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_VOLUME_DOWN, .dwFlags = KEYEVENTF_KEYUP }},
+};
 
-// You can exit the application using the hot key CTRL+ALT+C by default, if it
-// interferes with some application you're using (e.g. a full screen game).
+static const INPUT kDesktopLeftInput[] = {
+    { INPUT_KEYBOARD, .ki = { VK_CONTROL, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_LWIN, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_LEFT, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_LEFT, .dwFlags = KEYEVENTF_KEYUP }},
+    { INPUT_KEYBOARD, .ki = { VK_LWIN, .dwFlags = KEYEVENTF_KEYUP }},
+    { INPUT_KEYBOARD, .ki = { VK_CONTROL, .dwFlags = KEYEVENTF_KEYUP }},
+};
+
+static const INPUT kDesktopRightInput[] = {
+    { INPUT_KEYBOARD, .ki = { VK_CONTROL, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_LWIN, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_RIGHT, .dwFlags = 0 }},
+    { INPUT_KEYBOARD, .ki = { VK_RIGHT, .dwFlags = KEYEVENTF_KEYUP }},
+    { INPUT_KEYBOARD, .ki = { VK_LWIN, .dwFlags = KEYEVENTF_KEYUP }},
+    { INPUT_KEYBOARD, .ki = { VK_CONTROL, .dwFlags = KEYEVENTF_KEYUP }},
+};
+
+// You can exit the application using the hot key CTRL+ALT+Q by default.
 static const DWORD kHotKeyModifiers = MOD_CONTROL | MOD_ALT;
-static const DWORD kHotKey = 'C';
+static const DWORD kHotKey = 'Q';
 
-static HANDLE CornerThread = INVALID_HANDLE_VALUE;
 
-// This thread runs when the cursor enters the hot corner, and waits to see if the cursor stays in the corner.
-// If the mouse leaves while we're waiting, the thread is just terminated.
-static DWORD WINAPI CornerHotFunc(LPVOID lpParameter)
-{
+static LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
+    MSLLHOOKSTRUCT *evt = (MSLLHOOKSTRUCT *) lParam;
     BYTE KeyState[256];
-    POINT Point;
 
-    Sleep(kHotDelay);
+    // If there was no mouse wheel rotation, do nothing.
+    if (wParam != WM_MOUSEWHEEL)
+        goto finish;
 
-    // Check if a mouse putton is pressed, maybe a drag operation?
+    // Check if a mouse button is pressed
     if (GetKeyState(VK_LBUTTON) < 0 || GetKeyState(VK_RBUTTON) < 0) {
-        return 0;
+        goto finish;
     }
 
     // Check if any modifier keys are pressed.
@@ -67,80 +82,59 @@ static DWORD WINAPI CornerHotFunc(LPVOID lpParameter)
         if (KEYDOWN(KeyState[VK_SHIFT]) || KEYDOWN(KeyState[VK_CONTROL])
           || KEYDOWN(KeyState[VK_MENU]) || KEYDOWN(KeyState[VK_LWIN])
           || KEYDOWN(KeyState[VK_RWIN])) {
-            return 0;
-        }
-    }
-
-    // Verify the corner is still hot
-    if (GetCursorPos(&Point) == FALSE) {
-        return 1;
-    }
-
-    // Check co-ordinates.
-    if (PtInRect(&kHotCorner, Point)) {
-        #pragma warning(suppress : 4090)
-        if (SendInput(_countof(kCornerInput), kCornerInput, sizeof(INPUT)) != _countof(kCornerInput)) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-static LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
-{
-    MSLLHOOKSTRUCT *evt = (MSLLHOOKSTRUCT *) lParam;
-
-    // If the mouse hasn't moved, we're done.
-    if (wParam != WM_MOUSEMOVE)
-        goto finish;
-
-    // Check if the cursor is hot or cold.
-    if (!PtInRect(&kHotCorner, evt->pt)) {
-
-        // The corner is cold, and was cold before.
-        if (CornerThread == INVALID_HANDLE_VALUE)
             goto finish;
-
-        // The corner is cold, but was previously hot.
-        TerminateThread(CornerThread, 0);
-
-        CloseHandle(CornerThread);
-
-        // Reset state.
-        CornerThread = INVALID_HANDLE_VALUE;
-
-        goto finish;
+        }
     }
 
-    // The corner is hot, check if it was already hot.
-    if (CornerThread != INVALID_HANDLE_VALUE) {
-        goto finish;
-    }
+    // If hotcorner, we check for forwards or backwards mousewheel rotation.
+    // And change the volume accordingly.
+    short wheelDelta = HIWORD(evt->mouseData);
+	if (PtInRect(&kTopLeftHotCorner, evt->pt)) {
+		if (wheelDelta > 0) {
+			#pragma warning(suppress : 4090)
+			SendInput(_countof(kVolumeUpInput), kVolumeUpInput, sizeof(INPUT));
+		} else {
+			#pragma warning(suppress : 4090)
+			SendInput(_countof(kVolumeDownInput), kVolumeDownInput, sizeof(INPUT));
+		}
+		//Prevents the mouse wheel event from being handled by the program uderneath
+		return 1;
+	}
+	
+	//Switch virtual desktops on top-right hotcorner
+	if (PtInRect(&kTopRightHotCorner, evt->pt)){
+		if (wheelDelta > 0) {
+			#pragma warning(suppress : 4090)
+			SendInput(_countof(kDesktopLeftInput), kDesktopLeftInput, sizeof(INPUT));
+		} else {
+			#pragma warning(suppress : 4090)
+			SendInput(_countof(kDesktopRightInput), kDesktopRightInput, sizeof(INPUT));
+		}
+		return 1;
+	}
+	
 
-    // Check if a mouse putton is pressed, maybe a drag operation?
-    if (GetKeyState(VK_LBUTTON) < 0 || GetKeyState(VK_RBUTTON) < 0) {
-        goto finish;
-    }
-
-    // The corner is hot, and was previously cold. Here we start a thread to
-    // monitor if the mouse lingers.
-    CornerThread = CreateThread(NULL, 0, CornerHotFunc, NULL, 0, NULL);
-
-finish:
+    finish:
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
-{
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     MSG Msg;
     HHOOK MouseHook;
+	int screenResX;
 
-    if (!(MouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookCallback, NULL, 0)))
+	SetProcessDPIAware();
+	screenResX = GetSystemMetrics(SM_CXSCREEN);
+    kTopRightHotCorner.left     =   screenResX - 20;
+	kTopRightHotCorner.top      =   -20;
+	kTopRightHotCorner.right    =   screenResX + 20;
+    kTopRightHotCorner.bottom   =   +20;
+    
+    if (!(MouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookCallback, NULL, 0))){
         return 1;
+    }
 
     RegisterHotKey(NULL, 1, kHotKeyModifiers, kHotKey);
-
     while (GetMessage(&Msg, NULL, 0, 0)) {
         if (Msg.message == WM_HOTKEY) {
             break;
@@ -149,6 +143,5 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     }
 
     UnhookWindowsHookEx(MouseHook);
-
     return Msg.wParam;
 }

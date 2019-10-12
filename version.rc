@@ -12,10 +12,10 @@ VS_VERSION_INFO VERSIONINFO
     { 
         BLOCK "000004b0"
         {
-            VALUE "CompanyName",      "Tavis Ormandy"
-            VALUE "FileDescription",  "Hot Corner for Windows 10"
-            VALUE "ProductName",      "Hot Corner"
-            VALUE "Comment",          "https://github.com/taviso/hotcorner"
+            VALUE "CompanyName",      "eastmarch"
+            VALUE "FileDescription",  "voluMouse"
+            VALUE "ProductName",      "voluMouse"
+            VALUE "Comment",          "https://github.com/eastmarch/hotcorner"
         } 
     }
     BLOCK "VarFileInfo"
