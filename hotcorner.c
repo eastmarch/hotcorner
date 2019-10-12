@@ -130,10 +130,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     RegisterHotKey(NULL, 2, kHotKeyModUpdate, kHotKey);
     while (GetMessage(&Msg, NULL, 0, 0)) {
         if (Msg.message == WM_HOTKEY) {
-            switch (LOWORD(Msg.lParam)) {
-                case kHotKeyModQuit: break;
-                case kHotKeyModUpdate: UpdateCorners();
-            }
+            if (LOWORD(Msg.lParam) == kHotKeyModQuit)
+                break;
+            if (LOWORD(Msg.lParam) == kHotKeyModUpdate)
+                UpdateCorners();
         }
         DispatchMessage(&Msg);
     }
