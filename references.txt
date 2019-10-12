@@ -1,0 +1,36 @@
+WM_MOUSEWHEEL message
+https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-mousewheel
+
+Virtual-Key Codes
+https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+
+Keyboard Input Functions
+https://docs.microsoft.com/en-us/windows/win32/inputdev/keyboard-input-functions
+
+RegisterHotKey function
+https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
+
+Hooks Overview
+https://docs.microsoft.com/en-us/windows/win32/winmsg/about-hooks
+
+LowLevelMouseProc callback function
+https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms644986(v%3Dvs.85)
+
+WM_HOTKEY message
+https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-hotkey
+
+GetSystemMetrics function
+https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemmetrics
+
+Disabling keys using windows hooks
+https://stackoverflow.com/questions/828134/disabling-keys-using-windows-hooks
+
+GetSystemMetrics() returns wrong value for SM_CXSCREEN
+https://stackoverflow.com/questions/2630392/getsystemmetrics-returns-wrong-value-for-sm-cxscreen
+
+
+
+
+
+
+
