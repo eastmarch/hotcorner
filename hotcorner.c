@@ -53,7 +53,7 @@ static const DWORD kHotKeyModUpdate = MOD_CONTROL | MOD_ALT;
 static const DWORD kHotKeyModQuit = MOD_ALT | MOD_SHIFT;
 static const DWORD kHotKey = VK_F12;
 
-static bool modifierKeysPressedDown() {
+static int modifierKeysPressedDown() {
     return GetAsyncKeyState(VK_SHIFT) 
         || GetAsyncKeyState(VK_CONTROL) 
         || GetAsyncKeyState(VK_MENU) 
