@@ -28,9 +28,5 @@ https://stackoverflow.com/questions/828134/disabling-keys-using-windows-hooks
 GetSystemMetrics() returns wrong value for SM_CXSCREEN
 https://stackoverflow.com/questions/2630392/getsystemmetrics-returns-wrong-value-for-sm-cxscreen
 
-
-
-
-
-
-
+Meaningless GetKeyState() makes GetKeyboardState() work
+https://cplusplus.com/forum/windows/182867/
